@@ -4,6 +4,8 @@ import DashboardHeader from '../components/DashboardHeader';
 import axios from 'axios';
 import Pagination from '../components/Pagination';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('users');
@@ -26,7 +28,7 @@ const AdminDashboard = () => {
     // Fetch all users with their profiles
     const fetchUsers = async () => {
       try {
-        const response = await axios.get('http://localhost:8000/api/get_all_users/', {
+        const response = await axios.get(`${API_URL}get_all_users/`, {
           headers: {
             'Authorization': `Bearer ${accessToken}`
           }
@@ -52,7 +54,7 @@ const AdminDashboard = () => {
     const accessToken = localStorage.getItem('accessToken');
     
     try {
-      const response = await axios.delete(`http://localhost:8000/api/delete_user/${userId}/`, {
+      const response = await axios.delete(`${API_URL}delete_user/${userId}/`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`
         }
@@ -89,7 +91,7 @@ const AdminDashboard = () => {
         };
 
         const response = await axios.post(
-          'http://localhost:8000/api/admin/update_user/', 
+          `${API_URL}admin/update_user/`, 
           { user_id: userId, ...userData },
           {
             headers: {

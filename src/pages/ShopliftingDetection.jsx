@@ -37,6 +37,7 @@ function ShopliftingDetection() {
   const navigate = useNavigate();
   const location = useLocation();
   const isAnalysisPage = location.pathname.includes('/analysis');
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem('accessToken');
@@ -59,7 +60,7 @@ function ShopliftingDetection() {
 
     try {
       const response = await axios.get(
-        'http://localhost:8000/api/get-cameras/', 
+        `${API_URL}get-cameras/`, 
         headers
       );
       if (response.data.status === 'success') {
@@ -88,7 +89,7 @@ function ShopliftingDetection() {
     try {
       const cameraId = `camera-${Date.now()}`;
       const response = await axios.post(
-        'http://localhost:8000/api/connect-camera/',
+        `${API_URL}connect-camera/`,
         {
           camera_id: cameraId,
           video_path: formData.videoPath,
@@ -117,7 +118,7 @@ function ShopliftingDetection() {
 
     try {
       const response = await axios.delete(
-        `http://localhost:8000/api/delete-camera/${cameraId}/`,
+        `${API_URL}delete-camera/${cameraId}/`,
         headers
       );
       
@@ -138,7 +139,7 @@ function ShopliftingDetection() {
 
     try {
       const response = await axios.get(
-        `http://localhost:8000/api/get-frame/${cameraId}/`, 
+        `${API_URL}get-frame/${cameraId}/`, 
         headers
       );
       if (response.data.status === 'success' && response.data.frame) {
@@ -207,7 +208,7 @@ function ShopliftingDetection() {
 
       try {
         const response = await axios.get(
-          `http://localhost:8000/api/analysis-data/?time_filter=${timeFilter}`,
+          `${API_URL}analysis-data/?time_filter=${timeFilter}`,
           headers
         );
         if (response.data.status === 'success') {

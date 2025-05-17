@@ -8,6 +8,8 @@ let activeAudio = null;
 let userStoppedSound = false; // New flag to track if sound was deliberately stopped by user
 let isAppJustLoaded = true; // Track if app just loaded to prevent auto-alerts
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 function ShopliftingAlert() {
   const [isVisible, setIsVisible] = useState(false);
   const [alertData, setAlertData] = useState(null);
@@ -43,7 +45,7 @@ function ShopliftingAlert() {
       // Add a cache-busting parameter to prevent browser caching
       const cacheBuster = new Date().getTime();
       const response = await axios.get(
-        `http://localhost:8000/api/check-for-alerts/?t=${cacheBuster}`,
+        `${API_URL}check-for-alerts/?t=${cacheBuster}`,
         headers
       );
       
@@ -67,7 +69,7 @@ function ShopliftingAlert() {
         if (latest_alert) {
           try {
             const cameraResponse = await axios.get(
-              `http://localhost:8000/api/check-camera-status/${latest_alert.camera_id}/`,
+              `${API_URL}check-camera-status/${latest_alert.camera_id}/`,
               headers
             );
             

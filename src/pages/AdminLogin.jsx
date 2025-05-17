@@ -14,6 +14,8 @@ function AdminLogin() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -28,7 +30,7 @@ function AdminLogin() {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:8000/api/login/', {
+      const response = await axios.post(`${API_URL}login/`, {
         email: formData.email,
         password: formData.password
       });

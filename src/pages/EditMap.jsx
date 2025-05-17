@@ -4,9 +4,10 @@ import DashboardHeader from '../components/DashboardHeader';
 
 function EditMap() {
   const navigate = useNavigate();
+  const MAPPEDIN_EDITOR_URL = import.meta.env.VITE_MAPPEDIN_EDITOR_URL;
 
   const handleOpenEditor = () => {
-    window.open('https://app.mappedin.com/editor/', '_blank', 'noopener,noreferrer');
+    window.open(MAPPEDIN_EDITOR_URL, '_blank', 'noopener,noreferrer');
   };
 
   return (

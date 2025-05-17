@@ -8,6 +8,8 @@ function ForgotPassword() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -15,7 +17,7 @@ function ForgotPassword() {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:8000/api/request-password-reset/', {
+      const response = await axios.post(`${API_URL}request-password-reset/`, {
         email: email
       });
 

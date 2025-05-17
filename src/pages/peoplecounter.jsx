@@ -76,7 +76,7 @@ function AnalysisView() {
       if (!headers) return;
       
       const response = await axios.get(
-        `http://localhost:8000/api/people-counter-analysis/?time_filter=${timeFilter}`,
+        `${API_URL}people-counter-analysis/?time_filter=${timeFilter}`,
         headers
       );
       
@@ -334,7 +334,7 @@ function PeopleCounter() {
 
     try {
         const response = await axios.get(
-            'http://localhost:8000/api/get-people-counter-cameras/',
+            `${API_URL}get-people-counter-cameras/`,
             headers
         );
         if (response.data.status === 'success') {
@@ -364,7 +364,7 @@ function PeopleCounter() {
     try {
         const cameraId = `camera-${Date.now()}`;
         const response = await axios.post(
-            'http://localhost:8000/api/connect-people-counter/',
+            `${API_URL}connect-people-counter/`,
             {
                 camera_id: cameraId,
                 video_path: formData.videoPath
@@ -391,7 +391,7 @@ function PeopleCounter() {
 
     try {
       await axios.delete(
-        `http://localhost:8000/api/delete-people-counter-camera/${cameraId}/`,
+        `${API_URL}delete-people-counter-camera/${cameraId}/`,
         headers
       );
       loadCameras();
@@ -406,7 +406,7 @@ function PeopleCounter() {
 
     try {
       const response = await axios.get(
-        `http://localhost:8000/api/get-people-counter-frame/${cameraId}/`,
+        `${API_URL}get-people-counter-frame/${cameraId}/`,
         headers
       );
       if (response.data.status === 'success' && response.data.frame) {
@@ -487,7 +487,7 @@ function PeopleCounter() {
       }
   
       const response = await axios.post(
-        'http://localhost:8000/api/connect-people-counter/',
+        `${API_URL}connect-people-counter/`,
         {
           camera_id: cameraId,
           name: formData.name,
@@ -655,7 +655,7 @@ function PeopleCounter() {
                 <button
                   onClick={async () => {
                     const response = await axios.post(
-                      'http://localhost:8000/api/get-first-frame/',
+                      `${API_URL}get-first-frame/`,
                       { video_path: formData.videoPath },
                       getAuthHeaders()
                     );

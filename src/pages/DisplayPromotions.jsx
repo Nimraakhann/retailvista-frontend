@@ -6,12 +6,14 @@ const DisplayPromotions = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
   // Fetch active promotions
   useEffect(() => {
     const fetchPromotions = async () => {
       try {
         const accessToken = localStorage.getItem('accessToken');
-        const response = await axios.get('http://localhost:8000/api/promotions/active/', {
+        const response = await axios.get(`${API_URL}promotions/active/`, {
           headers: {
             'Authorization': `Bearer ${accessToken}`
           }

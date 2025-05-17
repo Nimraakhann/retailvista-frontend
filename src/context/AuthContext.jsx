@@ -11,6 +11,8 @@ export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
   useEffect(() => {
     const checkAuth = async () => {
       const userData = localStorage.getItem('userData');
@@ -39,7 +41,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password, rememberMe = false) => {
     try {
-      const response = await axios.post('http://localhost:8000/api/login/', {
+      const response = await axios.post(`${API_URL}login/`, {
         email,
         password,
       });
@@ -84,7 +86,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const accessToken = localStorage.getItem('accessToken');
       const response = await axios.post(
-        'http://localhost:8000/api/update-profile/',
+        `${API_URL}update-profile/`,
         profileData,
         {
           headers: {

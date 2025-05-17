@@ -15,6 +15,7 @@ function RecentActivity() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const navigate = useNavigate();
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem('accessToken');
@@ -40,7 +41,7 @@ function RecentActivity() {
       // Add cache-busting parameter to prevent browser caching
       const timestamp = new Date().getTime();
       const response = await axios.get(
-        `http://localhost:8000/api/shoplifting-alerts/?t=${timestamp}`,
+        `${API_URL}shoplifting-alerts/?t=${timestamp}`,
         headers
       );
       
@@ -129,7 +130,7 @@ function RecentActivity() {
     
     try {
       const response = await axios.post(
-        `http://localhost:8000/api/mark-alert-as-reviewed/${selectedAlert.id}/`,
+        `${API_URL}mark-alert-as-reviewed/${selectedAlert.id}/`,
         {},
         headers
       );

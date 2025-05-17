@@ -36,6 +36,7 @@ const ManagePromotions = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const navigate = useNavigate();
+  const API_URL = import.meta.env.VITE_API_URL;
 
   // Fetch promotions
   useEffect(() => {
@@ -45,7 +46,7 @@ const ManagePromotions = () => {
   const fetchPromotions = async () => {
     try {
       const accessToken = localStorage.getItem('accessToken');
-      const response = await axios.get('http://localhost:8000/api/promotions/', {
+      const response = await axios.get(`${API_URL}promotions/`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`
         }
@@ -85,13 +86,13 @@ const ManagePromotions = () => {
 
       if (showEditModal) {
         await axios.put(
-          `http://localhost:8000/api/promotions/${selectedPromotion.id}/`, 
+          `${API_URL}promotions/${selectedPromotion.id}/`, 
           formDataToSend,
           config
         );
       } else {
         await axios.post(
-          'http://localhost:8000/api/promotions/',
+          `${API_URL}promotions/`,
           formDataToSend,
           config
         );
@@ -111,7 +112,7 @@ const ManagePromotions = () => {
     if (window.confirm('Are you sure you want to delete this promotion?')) {
       try {
         const accessToken = localStorage.getItem('accessToken');
-        await axios.delete(`http://localhost:8000/api/promotions/${id}/`, {
+        await axios.delete(`${API_URL}promotions/${id}/`, {
           headers: {
             'Authorization': `Bearer ${accessToken}`
           }

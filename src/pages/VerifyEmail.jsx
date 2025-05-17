@@ -7,6 +7,7 @@ function VerifyEmail() {
   const [status, setStatus] = useState('verifying');
   const navigate = useNavigate();
   const location = useLocation();
+  const API_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
@@ -19,7 +20,9 @@ function VerifyEmail() {
 
     const verifyEmail = async () => {
       try {
-        const response = await axios.post('http://localhost:8000/api/verify-email/', { token });
+        const response = await axios.post(`${API_URL}verify-email/`, {
+          token: token
+        });
         
         if (response.data.status === 'success') {
           setStatus('success');

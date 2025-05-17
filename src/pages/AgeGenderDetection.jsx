@@ -66,7 +66,7 @@ function AnalysisView() {
 
     try {
       const response = await axios.get(
-        `http://localhost:8000/api/age-gender-analysis/?time_filter=${timeFilter}`,
+        `${import.meta.env.VITE_API_URL}age-gender-analysis/?time_filter=${timeFilter}`,
         headers
       );
       if (response.data.status === 'success') {
@@ -330,7 +330,7 @@ function AgeGenderDetection() {
 
       try {
         const response = await axios.get(
-          'http://localhost:8000/api/get-age-gender-cameras/', 
+          `${import.meta.env.VITE_API_URL}get-age-gender-cameras/`, 
           headers
         );
         if (response.data.status === 'success') {
@@ -357,7 +357,7 @@ function AgeGenderDetection() {
       const isWebcam = formData.videoPath.toLowerCase().trim() === 'webcam';
       
       const response = await axios.post(
-        'http://localhost:8000/api/connect-age-gender-camera/',
+        `${import.meta.env.VITE_API_URL}connect-age-gender-camera/`,
         {
           camera_id: cameraId,
           name: formData.name,  // Add this
@@ -374,7 +374,7 @@ function AgeGenderDetection() {
         setFormData({ name: '', videoPath: '' });  // Reset both fields
         
         const camerasResponse = await axios.get(
-          'http://localhost:8000/api/get-age-gender-cameras/',
+          `${import.meta.env.VITE_API_URL}get-age-gender-cameras/`,
           headers
         );
         
@@ -396,7 +396,7 @@ function AgeGenderDetection() {
 
     try {
       const response = await axios.delete(
-        `http://localhost:8000/api/delete-age-gender-camera/${cameraId}/`,
+        `${import.meta.env.VITE_API_URL}delete-age-gender-camera/${cameraId}/`,
         headers // Just send headers directly without spreading
       );
 
@@ -426,7 +426,7 @@ function AgeGenderDetection() {
   
     try {
       const response = await axios.get(
-        `http://localhost:8000/api/get-age-gender-frame/${cameraId}/`,
+        `${import.meta.env.VITE_API_URL}get-age-gender-frame/${cameraId}/`,
         headers
       );
       

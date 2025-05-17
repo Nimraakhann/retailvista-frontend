@@ -25,10 +25,12 @@ function ResetPassword() {
   const token = queryParams.get('token');
   const uid = queryParams.get('uid');
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
   useEffect(() => {
     const verifyToken = async () => {
       try {
-        const response = await axios.post('http://localhost:8000/api/verify-reset-token/', {
+        const response = await axios.post(`${API_URL}verify-reset-token/`, {
           token,
           uid
         });
@@ -68,10 +70,9 @@ function ResetPassword() {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:8000/api/set-new-password/', {
-        token,
-        uid,
-        password
+      const response = await axios.post(`${API_URL}reset-password/`, {
+        password: password,
+        token: token
       });
 
       if (response.data.status === 'success') {

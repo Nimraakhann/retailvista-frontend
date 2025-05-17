@@ -12,11 +12,13 @@ function UploadMap() {
   const [saveMessage, setSaveMessage] = useState({ type: '', text: '' });
   const [isInstructionsOpen, setIsInstructionsOpen] = useState(false);
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
   useEffect(() => {
     const fetchSavedIframe = async () => {
       try {
         const token = localStorage.getItem('accessToken');
-        const response = await axios.get('http://localhost:8000/api/map/', {
+        const response = await axios.get(`${API_URL}map/`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -133,7 +135,7 @@ function UploadMap() {
                       setSaveMessage({ type: '', text: '' });
                       
                       const token = localStorage.getItem('accessToken');
-                      await axios.post('http://localhost:8000/api/map/', 
+                      await axios.post(`${API_URL}map/`, 
                         { 
                           iframe_code: iframeCode,
                           editor_link: editorLink

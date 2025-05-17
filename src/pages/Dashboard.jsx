@@ -12,6 +12,7 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [editorLink, setEditorLink] = useState('');
   const [iframeCode, setIframeCode] = useState('');
+  const API_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     // Simple auth check
@@ -36,7 +37,7 @@ function Dashboard() {
     // Fetch editor link and iframe code
     const fetchMapData = async () => {
       try {
-        const response = await axios.get('http://localhost:8000/api/map/', {
+        const response = await axios.get(`${API_URL}map/`, {
           headers: { Authorization: `Bearer ${accessToken}` }
         });
         if (response.data?.editor_link) {

@@ -24,6 +24,8 @@ function Signup() {
   });
   const [showPassword, setShowPassword] = useState(false);
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
   const validatePassword = (password) => {
     setPasswordValidation({
       minLength: password.length >= 8,
@@ -76,7 +78,7 @@ function Signup() {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:8000/api/signup/', formData);
+      const response = await axios.post(`${API_URL}register/`, formData);
 
       if (response.data.status === 'success') {
         setSuccess('Please check your email to verify your account.');

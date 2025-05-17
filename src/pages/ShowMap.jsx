@@ -6,11 +6,13 @@ function ShowMap() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
   useEffect(() => {
     const fetchMapData = async () => {
       try {
         const token = localStorage.getItem('accessToken');
-        const response = await axios.get('http://localhost:8000/api/map/', {
+        const response = await axios.get(`${API_URL}map/`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
