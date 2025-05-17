@@ -7,6 +7,7 @@ import Home from '../components/Home'
 import Pose from '../components/Pose'
 import Solutions from '../components/Solutions'
 
+
 export default function LandingPage() {
   return (
     <div>
