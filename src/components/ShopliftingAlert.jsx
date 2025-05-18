@@ -2,13 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-// Global variables for sound management
-const audioRef = useRef(null);
-const soundTimeoutRef = useRef(null);
-const isSoundPlayingRef = useRef(false);
-const userStoppedSoundRef = useRef(false);
-const isAppJustLoadedRef = useRef(true);
-
 const API_URL = import.meta.env.VITE_API_URL;
 
 function ShopliftingAlert() {
@@ -22,6 +15,13 @@ function ShopliftingAlert() {
   const [isPollingPaused, setIsPollingPaused] = useState(false); // Pause polling when user is viewing evidence
   const processedAlerts = useRef(new Set()); // Track all alerts we've processed to avoid duplicates
   const navigate = useNavigate();
+
+  // Move refs inside the component
+  const audioRef = useRef(null);
+  const soundTimeoutRef = useRef(null);
+  const isSoundPlayingRef = useRef(false);
+  const userStoppedSoundRef = useRef(false);
+  const isAppJustLoadedRef = useRef(true);
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem('accessToken');
