@@ -64,7 +64,12 @@ function ShopliftingDetection() {
         headers
       );
       if (response.data.status === 'success') {
-        setCameras(response.data.cameras);
+        setCameras(
+          response.data.cameras.map(cam => ({
+            ...cam,
+            camera_id: cam.camera_id || cam.id
+          }))
+        );
       }
     } catch (error) {
       if (error.response?.status === 401) {
