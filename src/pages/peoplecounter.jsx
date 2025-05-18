@@ -314,6 +314,7 @@ function PeopleCounter() {
   const [tempPoints, setTempPoints] = useState([]);
   const location = useLocation();
   const isAnalysisPage = location.pathname.includes('/analysis');
+  const intervals = React.useRef({});
 
   const getAuthHeaders = () => {
     const accessToken = localStorage.getItem('accessToken');
@@ -389,12 +390,30 @@ function PeopleCounter() {
     const headers = getAuthHeaders();
     if (!headers) return;
 
+    // Optimistically remove from UI
+    setCameras(prevCameras => prevCameras.filter(cam => cam.id !== cameraId));
+
+    // Immediately stop polling frames for this camera
+    if (intervals.current[cameraId]) {
+      clearInterval(intervals.current[cameraId]);
+      delete intervals.current[cameraId];
+    }
+
+    // Clear the frame
+    const frameElement = document.getElementById(`frame-${cameraId}`);
+    if (frameElement) {
+      frameElement.src = '';
+    }
+
     try {
       await axios.delete(
         `${API_URL}delete-people-counter-camera/${cameraId}/`,
         headers
       );
-      loadCameras();
+      // Wait 1 second before refreshing camera list to allow backend to update
+      setTimeout(() => {
+        loadCameras();
+      }, 1000);
     } catch (error) {
       console.error('Error deleting camera:', error);
     }
@@ -525,14 +544,18 @@ function PeopleCounter() {
 }, []);
 
   useEffect(() => {
-    const intervals = {};
-    
+    // Clear all previous intervals
+    Object.values(intervals.current).forEach(clearInterval);
+    intervals.current = {};
+
     cameras.forEach(camera => {
-      intervals[camera.id] = setInterval(() => pollFrames(camera.id), 50);
+      if (camera?.id) {
+        intervals.current[camera.id] = setInterval(() => pollFrames(camera.id), 50);
+      }
     });
-    
+
     return () => {
-      Object.values(intervals).forEach(clearInterval);
+      Object.values(intervals.current).forEach(clearInterval);
     };
   }, [cameras]);
 

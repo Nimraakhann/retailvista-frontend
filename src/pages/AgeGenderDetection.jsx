@@ -308,6 +308,7 @@ function AgeGenderDetection() {
   const navigate = useNavigate();
   const location = useLocation();
   const isAnalysisPage = location.pathname.includes('/analysis');
+  const intervals = React.useRef({});
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem('accessToken');
@@ -394,22 +395,31 @@ function AgeGenderDetection() {
     const headers = getAuthHeaders();
     if (!headers) return;
 
+    // Optimistically remove from UI
+    setCameras(prevCameras => prevCameras.filter(cam => cam.camera_id !== cameraId));
+
+    // Immediately stop polling frames for this camera
+    if (intervals.current[cameraId]) {
+      clearInterval(intervals.current[cameraId]);
+      delete intervals.current[cameraId];
+    }
+
+    // Clear the frame
+    const frameElement = document.getElementById(`frame-${cameraId}`);
+    if (frameElement) {
+      frameElement.src = '';
+    }
+
     try {
       const response = await axios.delete(
         `${import.meta.env.VITE_API_URL}delete-age-gender-camera/${cameraId}/`,
-        headers // Just send headers directly without spreading
+        headers
       );
-
       if (response.data.status === 'success') {
-        // Remove camera from state
-        setCameras(prevCameras => {
-          const updatedCameras = prevCameras.filter(cam => cam.camera_id !== cameraId);
-          // If this was the last camera, navigate to analysis view
-          if (updatedCameras.length === 0) {
-            navigate('/age-gender/analysis');
-          }
-          return updatedCameras;
-        });
+        // Wait 1 second before refreshing camera list to allow backend to update
+        setTimeout(() => {
+          loadCameras();
+        }, 1000);
       }
     } catch (error) {
       if (error.response?.status === 401) {
@@ -441,33 +451,21 @@ function AgeGenderDetection() {
     }
   };
   
-  // Use a more reasonable polling frequency
   useEffect(() => {
-    const intervals = {};
-  
+    // Clear all previous intervals
+    Object.values(intervals.current).forEach(clearInterval);
+    intervals.current = {};
+
     cameras.forEach(camera => {
       if (camera?.camera_id) {
-        intervals[camera.camera_id] = setInterval(() => pollFrames(camera.camera_id), 50); // 20fps
+        intervals.current[camera.camera_id] = setInterval(() => pollFrames(camera.camera_id), 50);
       }
     });
-  
+
     return () => {
-      Object.values(intervals).forEach(clearInterval);
+      Object.values(intervals.current).forEach(clearInterval);
     };
   }, [cameras]);
-
-  useEffect(() => {
-    // Cleanup function to run when component unmounts
-    return () => {
-      // Clear all intervals
-      cameras.forEach(camera => {
-        if (camera?.id) {
-          clearInterval(window.pollInterval?.[camera.id]);
-          delete window.pollInterval?.[camera.id];
-        }
-      });
-    };
-  }, []);
 
   return (
     <div className="min-h-screen bg-black">
