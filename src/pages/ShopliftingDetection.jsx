@@ -125,6 +125,9 @@ function ShopliftingDetection() {
     const headers = getAuthHeaders();
     if (!headers) return;
 
+    // Optimistically remove from UI
+    setCameras(prevCameras => prevCameras.filter(cam => cam.camera_id !== cameraId));
+
     // Add camera to deleting set
     setDeletingCameras(prev => new Set([...prev, cameraId]));
 
