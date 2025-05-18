@@ -30,6 +30,7 @@ ChartJS.register(
 function ShopliftingDetection() {
   const [cameras, setCameras] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [deletingCameras, setDeletingCameras] = useState(new Set()); // Track cameras being deleted
   const [formData, setFormData] = useState({
     name: '',
     videoPath: ''
@@ -121,6 +122,25 @@ function ShopliftingDetection() {
     const headers = getAuthHeaders();
     if (!headers) return;
 
+    // Add camera to deleting set
+    setDeletingCameras(prev => new Set([...prev, cameraId]));
+
+    // Immediately stop polling frames for this camera
+    if (intervals[cameraId]) {
+      clearInterval(intervals[cameraId]);
+      delete intervals[cameraId];
+    }
+    if (stuckCheckerIntervals[cameraId]) {
+      clearInterval(stuckCheckerIntervals[cameraId]);
+      delete stuckCheckerIntervals[cameraId];
+    }
+
+    // Clear the frame
+    const frameElement = document.getElementById(`frame-${cameraId}`);
+    if (frameElement) {
+      frameElement.src = '';
+    }
+
     try {
       const response = await axios.delete(
         `${API_URL}delete-camera/${cameraId}/`,
@@ -133,6 +153,13 @@ function ShopliftingDetection() {
       }
     } catch (error) {
       alert(error.response?.data?.message || 'Error deleting camera');
+    } finally {
+      // Remove camera from deleting set
+      setDeletingCameras(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(cameraId);
+        return newSet;
+      });
     }
   };
 
@@ -183,15 +210,18 @@ function ShopliftingDetection() {
     const stuckCheckerIntervals = {};
     
     cameras.forEach(camera => {
-      intervals[camera.camera_id] = setInterval(() => pollFrames(camera.camera_id), 100); // Slightly slower polling rate
-      stuckCheckerIntervals[camera.camera_id] = setInterval(() => checkStuckFrames(camera.camera_id), 5000); // Check for stuck frames every 5 seconds
+      // Only start polling if camera is not being deleted
+      if (!deletingCameras.has(camera.camera_id)) {
+        intervals[camera.camera_id] = setInterval(() => pollFrames(camera.camera_id), 100);
+        stuckCheckerIntervals[camera.camera_id] = setInterval(() => checkStuckFrames(camera.camera_id), 5000);
+      }
     });
     
     return () => {
       Object.values(intervals).forEach(clearInterval);
       Object.values(stuckCheckerIntervals).forEach(clearInterval);
     };
-  }, [cameras]);
+  }, [cameras, deletingCameras]); // Add deletingCameras to dependencies
 
   function AnalysisView() {
     const [timeFilter, setTimeFilter] = useState('1h');
@@ -535,24 +565,30 @@ function ShopliftingDetection() {
           // Camera View
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {cameras.map(camera => (
-              <div key={camera.camera_id} className="bg-zinc-900 rounded-lg p-4">
+              <div key={camera.camera_id} className="bg-zinc-900 rounded-lg p-4 relative">
                 <div className="flex justify-between items-center mb-2">
                   <h3 className="text-white">{camera.name || `Camera ${camera.camera_id}`}</h3>
                   <div className="flex space-x-2">
                     <button
                       onClick={() => handleDeleteCamera(camera.camera_id)}
                       className="text-gray-400 hover:text-white"
+                      disabled={deletingCameras.has(camera.camera_id)}
                     >
                       ×
                     </button>
                   </div>
                 </div>
-                <div className="aspect-video bg-black relative overflow-hidden rounded-lg">
+                <div className={`aspect-video bg-black relative overflow-hidden rounded-lg ${deletingCameras.has(camera.camera_id) ? 'opacity-50' : ''}`}>
                   <img
                     id={`frame-${camera.camera_id}`}
                     className="absolute inset-0 w-full h-full object-contain"
                     alt="Video feed"
                   />
+                  {deletingCameras.has(camera.camera_id) && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
