@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 // Global variables for sound management
-let isSoundPlaying = false;
-let activeAudio = null;
-let userStoppedSound = false;
-let isAppJustLoaded = true;
-let soundTimeout = null;
+const audioRef = React.useRef(null);
+const soundTimeoutRef = React.useRef(null);
+const isSoundPlayingRef = React.useRef(false);
+const userStoppedSoundRef = React.useRef(false);
+const isAppJustLoadedRef = React.useRef(true);
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -21,7 +21,6 @@ function ShopliftingAlert() {
   const [lastAlertTime, setLastAlertTime] = useState(null); // Track time of last alert for throttling
   const [isPollingPaused, setIsPollingPaused] = useState(false); // Pause polling when user is viewing evidence
   const processedAlerts = useRef(new Set()); // Track all alerts we've processed to avoid duplicates
-  const audioRef = useRef(null); // Reference to the audio element
   const navigate = useNavigate();
 
   const getAuthHeaders = () => {
@@ -54,7 +53,7 @@ function ShopliftingAlert() {
         const { unreviewed_count, latest_alert } = response.data;
         
         // Skip alert processing during the initial app load period
-        if (isAppJustLoaded) {
+        if (isAppJustLoadedRef.current) {
           console.log("App just loaded, tracking alerts but not showing notifications");
           
           // Still track the alert IDs to avoid showing them later
@@ -138,7 +137,7 @@ function ShopliftingAlert() {
   // Process a new alert and decide whether to show it immediately or queue it
   const processNewAlert = (newAlert, totalCount) => {
     // Skip showing alerts immediately after app load
-    if (isAppJustLoaded) {
+    if (isAppJustLoadedRef.current) {
       console.log("App just loaded, skipping immediate alert display");
       return;
     }
@@ -153,7 +152,7 @@ function ShopliftingAlert() {
         setAlertData(newAlert);
         setIsVisible(true);
         // Reset the userStoppedSound flag for new alerts
-        userStoppedSound = false;
+        userStoppedSoundRef.current = false;
         playAlertSound();
 
         // Mark this alert as shown in localStorage
@@ -175,133 +174,88 @@ function ShopliftingAlert() {
 
   // Play the alert sound - completely new implementation
   const playAlertSound = () => {
-    // Clear any existing sound timeout
-    if (soundTimeout) {
-      clearTimeout(soundTimeout);
-      soundTimeout = null;
-    }
-
-    // First stop any existing sounds
-    forceStopAllAudio();
-    
-    // Don't start sound if user has manually stopped it
-    if (userStoppedSound) {
-      console.log("User has manually stopped sound - not restarting");
+    // Don't play if user stopped sound or app just loaded
+    if (userStoppedSoundRef.current || isAppJustLoadedRef.current) {
       return;
     }
-    
-    try {
-      // Create a new audio element
-      const audio = new Audio();
-      audio.id = 'primary-alert-sound';
-      audio.loop = true;
+
+    // Clear any existing timeout
+    if (soundTimeoutRef.current) {
+      clearTimeout(soundTimeoutRef.current);
+      soundTimeoutRef.current = null;
+    }
+
+    // Create audio element if it doesn't exist
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+      audioRef.current.loop = true;
+      audioRef.current.id = 'primary-alert-sound';
       
-      // Set up event listeners
-      audio.onended = () => {
-        isSoundPlaying = false;
-        activeAudio = null;
-      };
-      
-      audio.onerror = (e) => {
+      // Add error handler
+      audioRef.current.onerror = (e) => {
         console.error("Audio error:", e);
-        isSoundPlaying = false;
-        activeAudio = null;
-        
-        if (!userStoppedSound) {
-          tryAlternativeAudioMethod();
+        isSoundPlayingRef.current = false;
+        // Don't retry if user stopped sound
+        if (!userStoppedSoundRef.current) {
+          // Wait a bit before retrying
+          setTimeout(() => {
+            if (!userStoppedSoundRef.current) {
+              playAlertSound();
+            }
+          }, 1000);
         }
       };
-      
-      // Add a cache-buster to prevent caching issues
-      const cacheBuster = Date.now();
-      audio.src = `/alert-sound.mp3?v=${cacheBuster}`;
-      audio.load();
-      
-      // Try to play with a timeout
-      const playPromise = audio.play();
-      
-      if (playPromise !== undefined) {
-        playPromise.then(() => {
-          console.log("Alert sound playing in loop mode");
-          isSoundPlaying = true;
-          activeAudio = audio;
-          
-          // Add to DOM for easier management
-          document.body.appendChild(audio);
-          
-          // Set a timeout to stop the sound after 30 seconds if not dismissed
-          soundTimeout = setTimeout(() => {
-            if (isSoundPlaying && !userStoppedSound) {
-              console.log("Stopping sound after timeout");
-              forceStopAllAudio();
-            }
-          }, 30000); // 30 seconds timeout
-        }).catch(e => {
-          console.error("Error playing sound:", e);
-          if (!userStoppedSound) {
-            tryAlternativeAudioMethod();
-          }
-        });
-      }
-    } catch (e) {
-      console.error("Error in playAlertSound:", e);
-      if (!userStoppedSound) {
-        tryAlternativeAudioMethod();
+    }
+
+    // Only play if not already playing
+    if (!isSoundPlayingRef.current) {
+      try {
+        // Add cache buster to prevent caching issues
+        audioRef.current.src = `/alert-sound.mp3?v=${Date.now()}`;
+        
+        // Try to play
+        const playPromise = audioRef.current.play();
+        
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              console.log("Alert sound playing");
+              isSoundPlayingRef.current = true;
+              
+              // Set timeout to stop sound after 30 seconds
+              soundTimeoutRef.current = setTimeout(() => {
+                if (isSoundPlayingRef.current && !userStoppedSoundRef.current) {
+                  stopAlertSound();
+                }
+              }, 30000);
+            })
+            .catch((error) => {
+              console.error("Error playing sound:", error);
+              isSoundPlayingRef.current = false;
+            });
+        }
+      } catch (error) {
+        console.error("Error in playAlertSound:", error);
+        isSoundPlayingRef.current = false;
       }
     }
   };
   
   // Completely stop all audio to ensure nothing keeps playing
   const forceStopAllAudio = () => {
-    try {
-      console.log("Stopping all audio...");
-      
-      // Clear any pending sound timeout
-      if (soundTimeout) {
-        clearTimeout(soundTimeout);
-        soundTimeout = null;
-      }
-      
-      // Stop the active audio if exists
-      if (activeAudio) {
-        console.log("Stopping active audio element");
-        activeAudio.pause();
-        activeAudio.currentTime = 0;
-        activeAudio.src = '';
-        activeAudio.remove && activeAudio.remove();
-        activeAudio = null;
-      }
-      
-      // Reset the playing flag
-      isSoundPlaying = false;
-      
-      // Additional global cleanup
-      const allAudio = document.querySelectorAll('audio');
-      allAudio.forEach(audio => {
-        try {
-          audio.pause();
-          audio.currentTime = 0;
-          audio.src = '';
-          audio.remove && audio.remove();
-        } catch (e) {
-          console.error("Error stopping audio element:", e);
-        }
-      });
-      
-      // Find and remove any alert sound elements
-      const alertSoundElements = document.querySelectorAll('#alert-sound-element, #primary-alert-sound');
-      alertSoundElements.forEach(el => el.remove());
-      
-      console.log("All audio stopped successfully");
-    } catch (e) {
-      console.error("Error in forceStopAllAudio:", e);
-    }
+    stopAlertSound();
+    userStoppedSoundRef.current = true;
+    
+    // Reset userStoppedSound after 1 second
+    setTimeout(() => {
+      userStoppedSoundRef.current = false;
+    }, 1000);
   };
   
   // Try an alternative method to play sound if the primary method fails
   const tryAlternativeAudioMethod = () => {
     // Don't try alternative method if user stopped sound
-    if (userStoppedSound) {
+    if (userStoppedSoundRef.current) {
       return;
     }
     
@@ -322,7 +276,7 @@ function ShopliftingAlert() {
       
       altAudio.addEventListener('canplaythrough', () => {
         // Check again if user stopped sound before playing
-        if (userStoppedSound) {
+        if (userStoppedSoundRef.current) {
           altAudio.remove();
           return;
         }
@@ -344,13 +298,13 @@ function ShopliftingAlert() {
       });
       
       // Clean up after playing - this won't happen with loop until stopped manually
-      activeAudio = altAudio;
-      isSoundPlaying = true;
+      audioRef.current = altAudio;
+      isSoundPlayingRef.current = true;
       
       altAudio.onended = () => {
         altAudio.remove();
-        activeAudio = null;
-        isSoundPlaying = false;
+        audioRef.current = null;
+        isSoundPlayingRef.current = false;
       };
     } catch (e2) {
       console.error("Fallback audio also failed:", e2);
@@ -378,20 +332,12 @@ function ShopliftingAlert() {
       forceStopAllAudio();
       
       // Extra cleanup
-      isSoundPlaying = false;
-      activeAudio = null;
+      isSoundPlayingRef.current = false;
+      audioRef.current = null;
       
       // Find and remove all audio elements created by this component
       const alertSounds = document.querySelectorAll('#alert-sound-element, #primary-alert-sound');
-      alertSounds.forEach(el => {
-        try {
-          el.pause();
-          el.currentTime = 0;
-          el.remove();
-        } catch (e) {
-          console.error("Error cleaning up audio:", e);
-        }
-      });
+      alertSounds.forEach(el => el.remove());
     };
   }, []);
 
@@ -403,15 +349,15 @@ function ShopliftingAlert() {
     setIsVisible(false);
     setAlertData(null);
     setAlertQueue([]);
-    userStoppedSound = false;
-    isAppJustLoaded = true; // Set initial load flag
+    userStoppedSoundRef.current = false;
+    isAppJustLoadedRef.current = true; // Set initial load flag
     
     // Clear any existing audio elements that might be left from previous sessions
     forceStopAllAudio();
     
     // Setup first check after interaction or after 5 seconds
     const initialCheck = () => {
-      isAppJustLoaded = false; // User has interacted, no longer just loaded
+      isAppJustLoadedRef.current = false; // User has interacted, no longer just loaded
       checkForAlerts();
       document.removeEventListener('click', initialCheck);
     };
@@ -420,7 +366,7 @@ function ShopliftingAlert() {
     
     // Also reset the just loaded flag after 5 seconds even without interaction
     const resetLoadFlag = setTimeout(() => {
-      isAppJustLoaded = false;
+      isAppJustLoadedRef.current = false;
     }, 5000);
     
     return () => {
@@ -456,7 +402,7 @@ function ShopliftingAlert() {
       setIsVisible(true);
       setAlertQueue(prevQueue => prevQueue.slice(1));
       // Reset userStoppedSound flag for new alerts from queue
-      userStoppedSound = false;
+      userStoppedSoundRef.current = false;
       playAlertSound();
     }
   }, [alertQueue, isVisible, isDismissing]);
@@ -469,7 +415,7 @@ function ShopliftingAlert() {
     if (isVisible && alertData) {
       soundCheckInterval = setInterval(() => {
         // Only restart if not deliberately stopped by user
-        if (!isSoundPlaying && activeAudio === null && !userStoppedSound) {
+        if (!isSoundPlayingRef.current && audioRef.current === null && !userStoppedSoundRef.current) {
           console.log("Sound stopped but alert still visible - restarting sound");
           playAlertSound();
         }
@@ -509,7 +455,7 @@ function ShopliftingAlert() {
         forceStopAllAudio();
         setIsVisible(false);
         setAlertData(null);
-        userStoppedSound = true; // Prevent auto-restart
+        userStoppedSoundRef.current = true; // Prevent auto-restart
       }
     };
 
@@ -532,11 +478,11 @@ function ShopliftingAlert() {
       const timeSinceLastSession = currentTime - parseInt(lastSessionTime, 10);
       // If less than 3 seconds since last session, likely a reload
       if (timeSinceLastSession < 3000) {
-        isAppJustLoaded = true;
+        isAppJustLoadedRef.current = true;
         console.log("Page reload detected - will suppress initial alerts");
         // Extend the suppression period a bit longer for reloads
         setTimeout(() => {
-          isAppJustLoaded = false;
+          isAppJustLoadedRef.current = false;
           console.log("Alert suppression period ended after reload");
         }, 10000); // 10 seconds for reload vs 5 for normal load
       }
@@ -557,12 +503,12 @@ function ShopliftingAlert() {
 
   const handleViewCamera = () => {
     console.log("View Camera button clicked - stopping audio");
-    userStoppedSound = true; // Set flag to prevent auto-restart
+    userStoppedSoundRef.current = true; // Set flag to prevent auto-restart
     forceStopAllAudio(); // Ensure audio stops
     
     // Additional cleanup
-    isSoundPlaying = false;
-    activeAudio = null;
+    isSoundPlayingRef.current = false;
+    audioRef.current = null;
     
     dismissAlert();
     
@@ -575,12 +521,12 @@ function ShopliftingAlert() {
 
   const handleViewEvidence = () => {
     console.log("View Evidence button clicked - stopping audio");
-    userStoppedSound = true; // Set flag to prevent auto-restart
+    userStoppedSoundRef.current = true; // Set flag to prevent auto-restart
     forceStopAllAudio(); // Ensure audio stops
     
     // Additional cleanup
-    isSoundPlaying = false;
-    activeAudio = null;
+    isSoundPlayingRef.current = false;
+    audioRef.current = null;
     
     dismissAlert();
     
@@ -593,29 +539,31 @@ function ShopliftingAlert() {
 
   const dismissAlert = () => {
     console.log("Dismiss button clicked - stopping audio");
-    userStoppedSound = true;
     forceStopAllAudio();
-    
-    // Additional cleanup 
-    isSoundPlaying = false;
-    activeAudio = null;
-    
-    // Clear any pending sound timeout
-    if (soundTimeout) {
-      clearTimeout(soundTimeout);
-      soundTimeout = null;
-    }
     
     setIsDismissing(true);
     setTimeout(() => {
       setIsVisible(false);
       setIsDismissing(false);
-      
-      // Reset the userStoppedSound flag after a delay
-      setTimeout(() => {
-        userStoppedSound = false;
-      }, 1000);
     }, 300);
+  };
+
+  // Add new stopAlertSound function:
+  const stopAlertSound = () => {
+    if (audioRef.current) {
+      try {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        isSoundPlayingRef.current = false;
+      } catch (error) {
+        console.error("Error stopping sound:", error);
+      }
+    }
+    
+    if (soundTimeoutRef.current) {
+      clearTimeout(soundTimeoutRef.current);
+      soundTimeoutRef.current = null;
+    }
   };
 
   // Always render the container even if no visible alert
