@@ -180,8 +180,8 @@ function ShopliftingDetection() {
     const stuckCheckerIntervals = {};
     
     cameras.forEach(camera => {
-      intervals[camera.id] = setInterval(() => pollFrames(camera.id), 100); // Slightly slower polling rate
-      stuckCheckerIntervals[camera.id] = setInterval(() => checkStuckFrames(camera.id), 5000); // Check for stuck frames every 5 seconds
+      intervals[camera.camera_id] = setInterval(() => pollFrames(camera.camera_id), 100); // Slightly slower polling rate
+      stuckCheckerIntervals[camera.camera_id] = setInterval(() => checkStuckFrames(camera.camera_id), 5000); // Check for stuck frames every 5 seconds
     });
     
     return () => {
@@ -532,12 +532,12 @@ function ShopliftingDetection() {
           // Camera View
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {cameras.map(camera => (
-              <div key={camera.id} className="bg-zinc-900 rounded-lg p-4">
+              <div key={camera.camera_id} className="bg-zinc-900 rounded-lg p-4">
                 <div className="flex justify-between items-center mb-2">
-                  <h3 className="text-white">{camera.name || `Camera ${camera.id}`}</h3>
+                  <h3 className="text-white">{camera.name || `Camera ${camera.camera_id}`}</h3>
                   <div className="flex space-x-2">
                     <button
-                      onClick={() => handleDeleteCamera(camera.id)}
+                      onClick={() => handleDeleteCamera(camera.camera_id)}
                       className="text-gray-400 hover:text-white"
                     >
                       ×
@@ -546,7 +546,7 @@ function ShopliftingDetection() {
                 </div>
                 <div className="aspect-video bg-black relative overflow-hidden rounded-lg">
                   <img
-                    id={`frame-${camera.id}`}
+                    id={`frame-${camera.camera_id}`}
                     className="absolute inset-0 w-full h-full object-contain"
                     alt="Video feed"
                   />
