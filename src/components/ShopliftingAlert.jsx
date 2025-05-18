@@ -113,17 +113,16 @@ function ShopliftingAlert() {
       return false;
     }
     
-    // Check localStorage for processed alerts (marked as reviewed)
+    // Check localStorage for shown alerts (not just reviewed)
     try {
-      const processedAlertsFromStorage = JSON.parse(localStorage.getItem('processedAlerts') || '[]');
-      if (processedAlertsFromStorage.includes(alert.id)) {
-        console.log("Alert already processed (from localStorage), skipping:", alert.id);
+      const shownAlerts = JSON.parse(localStorage.getItem('shownAlerts') || '[]');
+      if (shownAlerts.includes(alert.id)) {
         // Add to our in-memory set to avoid future checks
         processedAlerts.current.add(alert.id);
         return false;
       }
     } catch (e) {
-      console.error("Error checking processed alerts in localStorage:", e);
+      console.error("Error checking shown alerts in localStorage:", e);
     }
     
     // Apply time-based throttling - don't show alerts too frequently
@@ -156,6 +155,17 @@ function ShopliftingAlert() {
         // Reset the userStoppedSound flag for new alerts
         userStoppedSound = false;
         playAlertSound();
+
+        // Mark this alert as shown in localStorage
+        try {
+          const shownAlerts = JSON.parse(localStorage.getItem('shownAlerts') || '[]');
+          if (!shownAlerts.includes(newAlert.id)) {
+            shownAlerts.push(newAlert.id);
+            localStorage.setItem('shownAlerts', JSON.stringify(shownAlerts));
+          }
+        } catch (e) {
+          console.error("Error saving shown alert to localStorage:", e);
+        }
       } else {
         // Otherwise add it to the queue
         setAlertQueue(prevQueue => [...prevQueue, newAlert]);
