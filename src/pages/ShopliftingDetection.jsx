@@ -40,6 +40,9 @@ function ShopliftingDetection() {
   const isAnalysisPage = location.pathname.includes('/analysis');
   const API_URL = import.meta.env.VITE_API_URL;
 
+  const intervals = React.useRef({});
+  const stuckCheckerIntervals = React.useRef({});
+
   const getAuthHeaders = () => {
     const token = localStorage.getItem('accessToken');
     if (!token) {
@@ -126,13 +129,13 @@ function ShopliftingDetection() {
     setDeletingCameras(prev => new Set([...prev, cameraId]));
 
     // Immediately stop polling frames for this camera
-    if (intervals[cameraId]) {
-      clearInterval(intervals[cameraId]);
-      delete intervals[cameraId];
+    if (intervals.current[cameraId]) {
+      clearInterval(intervals.current[cameraId]);
+      delete intervals.current[cameraId];
     }
-    if (stuckCheckerIntervals[cameraId]) {
-      clearInterval(stuckCheckerIntervals[cameraId]);
-      delete stuckCheckerIntervals[cameraId];
+    if (stuckCheckerIntervals.current[cameraId]) {
+      clearInterval(stuckCheckerIntervals.current[cameraId]);
+      delete stuckCheckerIntervals.current[cameraId];
     }
 
     // Clear the frame
@@ -207,22 +210,24 @@ function ShopliftingDetection() {
   };
 
   useEffect(() => {
-    const intervals = {};
-    const stuckCheckerIntervals = {};
-    
+    // Clear all previous intervals
+    Object.values(intervals.current).forEach(clearInterval);
+    Object.values(stuckCheckerIntervals.current).forEach(clearInterval);
+    intervals.current = {};
+    stuckCheckerIntervals.current = {};
+
     cameras.forEach(camera => {
-      // Only start polling if camera is not being deleted
       if (!deletingCameras.has(camera.camera_id)) {
-        intervals[camera.camera_id] = setInterval(() => pollFrames(camera.camera_id), 100);
-        stuckCheckerIntervals[camera.camera_id] = setInterval(() => checkStuckFrames(camera.camera_id), 5000);
+        intervals.current[camera.camera_id] = setInterval(() => pollFrames(camera.camera_id), 100);
+        stuckCheckerIntervals.current[camera.camera_id] = setInterval(() => checkStuckFrames(camera.camera_id), 5000);
       }
     });
-    
+
     return () => {
-      Object.values(intervals).forEach(clearInterval);
-      Object.values(stuckCheckerIntervals).forEach(clearInterval);
+      Object.values(intervals.current).forEach(clearInterval);
+      Object.values(stuckCheckerIntervals.current).forEach(clearInterval);
     };
-  }, [cameras, deletingCameras]); // Add deletingCameras to dependencies
+  }, [cameras, deletingCameras]);
 
   function AnalysisView() {
     const [timeFilter, setTimeFilter] = useState('1h');
