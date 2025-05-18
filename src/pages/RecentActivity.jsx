@@ -398,21 +398,13 @@ function RecentActivity() {
                   {console.log('Video src:', selectedAlert.video_clip)}
                   <video
                     key={selectedAlert.video_clip}
-                    src={`${selectedAlert.video_clip}?t=${Date.now()}`}
+                    src={selectedAlert.video_clip}
                     controls
                     autoPlay
                     className="w-full h-full object-contain"
                     onError={e => {
                       console.error("Video error:", e);
-                      // Try to reload the video if it fails
-                      const video = e.target;
-                      if (video.src) {
-                        const currentSrc = video.src;
-                        video.src = '';
-                        setTimeout(() => {
-                          video.src = currentSrc + '&retry=true';
-                        }, 1000);
-                      }
+                      // Optionally, show a user-friendly error message here
                     }}
                   />
                 </>
