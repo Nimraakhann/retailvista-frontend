@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-// Global variable to track if any sound is playing
+// Global variables for sound management
 let isSoundPlaying = false;
 let activeAudio = null;
-let userStoppedSound = false; // New flag to track if sound was deliberately stopped by user
-let isAppJustLoaded = true; // Track if app just loaded to prevent auto-alerts
+let userStoppedSound = false;
+let isAppJustLoaded = true;
+let soundTimeout = null;
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -164,6 +165,12 @@ function ShopliftingAlert() {
 
   // Play the alert sound - completely new implementation
   const playAlertSound = () => {
+    // Clear any existing sound timeout
+    if (soundTimeout) {
+      clearTimeout(soundTimeout);
+      soundTimeout = null;
+    }
+
     // First stop any existing sounds
     forceStopAllAudio();
     
@@ -174,15 +181,13 @@ function ShopliftingAlert() {
     }
     
     try {
-      // Create a completely new audio element
+      // Create a new audio element
       const audio = new Audio();
       audio.id = 'primary-alert-sound';
+      audio.loop = true;
       
-      // Set up event listeners - IMPORTANT: Make it loop
-      audio.loop = true; // Make the sound loop continuously
-      
+      // Set up event listeners
       audio.onended = () => {
-        // This won't trigger with loop=true unless playback is manually stopped
         isSoundPlaying = false;
         activeAudio = null;
       };
@@ -192,7 +197,6 @@ function ShopliftingAlert() {
         isSoundPlaying = false;
         activeAudio = null;
         
-        // Don't try alternative method if user stopped sound
         if (!userStoppedSound) {
           tryAlternativeAudioMethod();
         }
@@ -200,11 +204,10 @@ function ShopliftingAlert() {
       
       // Add a cache-buster to prevent caching issues
       const cacheBuster = Date.now();
-      // Only set the source after setting up the event listeners
-      audio.src = `/alert-sound.mp3?v=${cacheBuster}`; 
+      audio.src = `/alert-sound.mp3?v=${cacheBuster}`;
       audio.load();
       
-      // Try to play
+      // Try to play with a timeout
       const playPromise = audio.play();
       
       if (playPromise !== undefined) {
@@ -215,9 +218,16 @@ function ShopliftingAlert() {
           
           // Add to DOM for easier management
           document.body.appendChild(audio);
+          
+          // Set a timeout to stop the sound after 30 seconds if not dismissed
+          soundTimeout = setTimeout(() => {
+            if (isSoundPlaying && !userStoppedSound) {
+              console.log("Stopping sound after timeout");
+              forceStopAllAudio();
+            }
+          }, 30000); // 30 seconds timeout
         }).catch(e => {
           console.error("Error playing sound:", e);
-          // Alternative approach using a different audio object
           if (!userStoppedSound) {
             tryAlternativeAudioMethod();
           }
@@ -236,10 +246,10 @@ function ShopliftingAlert() {
     try {
       console.log("Stopping all audio...");
       
-      // Cancel any pending audio restarts
-      if (window._pendingAudioRestart) {
-        clearTimeout(window._pendingAudioRestart);
-        window._pendingAudioRestart = null;
+      // Clear any pending sound timeout
+      if (soundTimeout) {
+        clearTimeout(soundTimeout);
+        soundTimeout = null;
       }
       
       // Stop the active audio if exists
@@ -255,9 +265,8 @@ function ShopliftingAlert() {
       // Reset the playing flag
       isSoundPlaying = false;
       
-      // Additional global cleanup - find ALL audio elements
+      // Additional global cleanup
       const allAudio = document.querySelectorAll('audio');
-      console.log(`Found ${allAudio.length} audio elements to stop`);
       allAudio.forEach(audio => {
         try {
           audio.pause();
@@ -269,17 +278,9 @@ function ShopliftingAlert() {
         }
       });
       
-      // Find any elements with ID alert-sound-element
+      // Find and remove any alert sound elements
       const alertSoundElements = document.querySelectorAll('#alert-sound-element, #primary-alert-sound');
       alertSoundElements.forEach(el => el.remove());
-      
-      // Extra: try to stop any audio contexts
-      try {
-        if (window.audioContext) {
-          window.audioContext.close();
-          window.audioContext = null;
-        }
-      } catch (err) {}
       
       console.log("All audio stopped successfully");
     } catch (e) {
@@ -582,24 +583,25 @@ function ShopliftingAlert() {
 
   const dismissAlert = () => {
     console.log("Dismiss button clicked - stopping audio");
-    userStoppedSound = true; // Set flag to prevent auto-restart
-    forceStopAllAudio(); // Ensure audio stops
+    userStoppedSound = true;
+    forceStopAllAudio();
     
     // Additional cleanup 
     isSoundPlaying = false;
     activeAudio = null;
     
-    // Remove any remaining audio elements from DOM
-    const audioElements = document.querySelectorAll('#alert-sound-element');
-    audioElements.forEach(el => el.remove());
+    // Clear any pending sound timeout
+    if (soundTimeout) {
+      clearTimeout(soundTimeout);
+      soundTimeout = null;
+    }
     
     setIsDismissing(true);
     setTimeout(() => {
       setIsVisible(false);
       setIsDismissing(false);
       
-      // Reset the userStoppedSound flag when the alert is fully dismissed
-      // This allows future alerts to play sounds
+      // Reset the userStoppedSound flag after a delay
       setTimeout(() => {
         userStoppedSound = false;
       }, 1000);
