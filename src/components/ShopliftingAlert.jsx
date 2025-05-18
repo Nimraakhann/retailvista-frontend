@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 // Global variables for sound management
-const audioRef = React.useRef(null);
-const soundTimeoutRef = React.useRef(null);
-const isSoundPlayingRef = React.useRef(false);
-const userStoppedSoundRef = React.useRef(false);
-const isAppJustLoadedRef = React.useRef(true);
+const audioRef = useRef(null);
+const soundTimeoutRef = useRef(null);
+const isSoundPlayingRef = useRef(false);
+const userStoppedSoundRef = useRef(false);
+const isAppJustLoadedRef = useRef(true);
 
 const API_URL = import.meta.env.VITE_API_URL;
 
