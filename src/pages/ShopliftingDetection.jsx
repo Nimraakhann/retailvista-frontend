@@ -121,20 +121,17 @@ function ShopliftingDetection() {
     const headers = getAuthHeaders();
     if (!headers) return;
 
+    // Optimistically remove from UI
+    setCameras(prevCameras => prevCameras.filter(cam => cam.camera_id !== cameraId));
+
     try {
       const response = await axios.delete(
         `${API_URL}delete-camera/${cameraId}/`,
         headers
       );
-      
-      if (response.data.status === 'success') {
-        loadCameras(); // Reload cameras from backend instead of updating state directly
-      }
+      // Optionally, handle backend errors here, but do not re-add the camera to UI
     } catch (error) {
-      if (error.response?.status === 401) {
-        navigate('/login');
-      }
-      console.error('Error deleting camera:', error);
+      // Optionally, handle network errors here, but do not re-add the camera to UI
     }
   };
 
