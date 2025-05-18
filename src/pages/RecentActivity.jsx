@@ -394,26 +394,28 @@ function RecentActivity() {
             
             <div className="aspect-video bg-black">
               {selectedAlert.video_clip ? (
-                <video 
-                  className="w-full h-full object-contain" 
-                  src={`${selectedAlert.video_clip}?t=${Date.now()}`} 
-                  controls 
-                  autoPlay
-                  loop
-                  playsInline
-                  onError={(e) => {
-                    console.error("Video error:", e);
-                    // Try to reload the video if it fails
-                    const video = e.target;
-                    if (video.src) {
-                      const currentSrc = video.src;
-                      video.src = '';
-                      setTimeout(() => {
-                        video.src = currentSrc + '&retry=true';
-                      }, 1000);
-                    }
-                  }}
-                />
+                <>
+                  {console.log('Video URL:', selectedAlert.video_clip)}
+                  <video
+                    key={selectedAlert.video_clip}
+                    src={`${selectedAlert.video_clip}?t=${Date.now()}`}
+                    controls
+                    autoPlay
+                    className="w-full h-full object-contain"
+                    onError={e => {
+                      console.error("Video error:", e);
+                      // Try to reload the video if it fails
+                      const video = e.target;
+                      if (video.src) {
+                        const currentSrc = video.src;
+                        video.src = '';
+                        setTimeout(() => {
+                          video.src = currentSrc + '&retry=true';
+                        }, 1000);
+                      }
+                    }}
+                  />
+                </>
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-gray-400">
                   <div className="text-center">
