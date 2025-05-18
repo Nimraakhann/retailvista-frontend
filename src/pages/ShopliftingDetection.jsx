@@ -147,7 +147,8 @@ function ShopliftingDetection() {
         headers
       );
       if (response.data.status === 'success') {
-        setCameras(prevCameras => prevCameras.filter(cam => cam.camera_id !== cameraId));
+        // Always refresh camera list from backend after delete
+        loadCameras();
       } else {
         alert(response.data.message || 'Failed to delete camera');
       }
