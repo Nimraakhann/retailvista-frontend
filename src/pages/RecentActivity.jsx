@@ -395,7 +395,7 @@ function RecentActivity() {
             <div className="aspect-video bg-black">
               {selectedAlert.video_clip ? (
                 <>
-                  {console.log('Video URL:', selectedAlert.video_clip)}
+                  {console.log('Video src:', selectedAlert.video_clip)}
                   <video
                     key={selectedAlert.video_clip}
                     src={`${selectedAlert.video_clip}?t=${Date.now()}`}
