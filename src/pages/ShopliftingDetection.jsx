@@ -153,8 +153,10 @@ function ShopliftingDetection() {
         headers
       );
       if (response.data.status === 'success') {
-        // Always refresh camera list from backend after delete
-        loadCameras();
+        // Wait 1 second before refreshing camera list to allow backend to update
+        setTimeout(() => {
+          loadCameras();
+        }, 1000);
       } else {
         alert(response.data.message || 'Failed to delete camera');
       }
